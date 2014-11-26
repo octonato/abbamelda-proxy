@@ -2,9 +2,14 @@ package models
 
 import akka.actor.{ActorLogging, Actor, Props}
 import play.api.libs.json.JsValue
+import akka.pattern.pipe
+import services.AbbaMeldaService
+
+import scala.concurrent.Future
 
 class Onderdeel extends Actor with ActorLogging {
 
+  import context.dispatcher
   import models.Onderdeel._
 
   private var data: Option[JsValue] = None
@@ -27,7 +32,18 @@ class Onderdeel extends Actor with ActorLogging {
   }
 
   def fetchData(value: JsValue): Unit = {
-    self ! ReceivedData(value)
+
+    val id = (value \ "id").as[Long]
+    val futureRes = AbbaMeldaService.fetchOnderdeel(id)
+
+    val receivedData = {
+      import concurrent.Execution.wsExecutionContext
+      futureRes.map { res =>
+        ReceivedData(res)
+      }
+    }
+
+    receivedData pipeTo self
   }
 }
 

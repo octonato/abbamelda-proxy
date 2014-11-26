@@ -13,11 +13,15 @@ import scala.concurrent.Future
 
 object AbbaMeldaService {
 
+  private val onderdeel = "/resources/sync/onderdelen"
   private val onderdelenStatus = "/resources/sync/onderdelenstatus"
+
+  val url = current.configuration.getString("abbamelda.url").get
+
+  import concurrent.Execution.wsExecutionContext
 
   def fetchStatuses(offset: Int, lastUpdate: LocalDateTime): Future[JsValue] = {
 
-    val url = current.configuration.getString("abbamelda.url").get
     val limit = current.configuration.getInt("abbamelda.batch.size").getOrElse(20)
 
     WS.url(url + onderdelenStatus)
@@ -28,5 +32,13 @@ object AbbaMeldaService {
       .get()
       .map(_.json)
 
+  }
+
+  def fetchOnderdeel(id:Long) : Future[JsValue] = {
+    WS.url(url + onderdeel)
+    .withQueryString(
+        "id" -> id.toString)
+    .get()
+    .map(_.json)
   }
 }
